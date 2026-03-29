@@ -79,6 +79,13 @@ public class UserController {
             return Result.error(403, "无权限在该组织机构下创建用户");
         }
         
+        // 检查角色权限：非超级管理员不能创建管理员用户
+        if (!dataPermissionUtils.isAdmin(currentUser)) {
+            if (user.getUserType() != null && user.getUserType() == 1) {
+                return Result.error(403, "无权限创建管理员用户");
+            }
+        }
+        
         User existUser = userService.findByUsername(user.getUsername());
         if (existUser != null && !existUser.getId().equals(user.getId())) {
             return Result.error("用户名已存在");
@@ -111,15 +118,35 @@ public class UserController {
             }
         } else {
             User existingUser = userService.findById(user.getId());
-            if (existingUser != null && existingUser.getOrganizationId() != null 
+            if (existingUser == null) {
+                return Result.error("用户不存在");
+            }
+            
+            if (existingUser.getOrganizationId() != null 
                     && !dataPermissionUtils.hasOrgPermission(currentUser, existingUser.getOrganizationId())) {
                 return Result.error(403, "无权限修改该用户");
             }
             
             if (user.getOrganizationId() != null 
-                    && (existingUser == null || !user.getOrganizationId().equals(existingUser.getOrganizationId()))
+                    && !user.getOrganizationId().equals(existingUser.getOrganizationId())
                     && !dataPermissionUtils.hasOrgPermission(currentUser, user.getOrganizationId())) {
                 return Result.error(403, "无权限将用户移动到该组织机构");
+            }
+            
+            // 检查角色权限：非超级管理员不能修改管理员用户，也不能将用户提升为管理员
+            if (!dataPermissionUtils.isAdmin(currentUser)) {
+                // 不能修改管理员用户
+                if (existingUser.getUserType() != null && existingUser.getUserType() == 1) {
+                    return Result.error(403, "无权限修改管理员用户");
+                }
+                // 不能将用户提升为管理员
+                if (user.getUserType() != null && user.getUserType() == 1) {
+                    return Result.error(403, "无权限将用户提升为管理员");
+                }
+                // 不能通过roleId将用户提升为管理员角色（需要检查目标角色是否为管理员角色）
+                if (user.getRoleId() != null && !user.getRoleId().equals(existingUser.getRoleId())) {
+                    return Result.error(403, "无权限修改用户角色");
+                }
             }
             
             existingUser.setRealName(user.getRealName());
@@ -178,6 +205,16 @@ public class UserController {
         if (user.getOrganizationId() != null 
                 && !dataPermissionUtils.hasOrgPermission(currentUser, user.getOrganizationId())) {
             return Result.error(403, "无权限为该用户绑定角色");
+        }
+        
+        // 检查角色权限：非超级管理员不能修改管理员用户，也不能将用户提升为管理员角色
+        if (!dataPermissionUtils.isAdmin(currentUser)) {
+            // 不能修改管理员用户
+            if (user.getUserType() != null && user.getUserType() == 1) {
+                return Result.error(403, "无权限修改管理员用户的角色");
+            }
+            // 不能修改用户角色
+            return Result.error(403, "无权限修改用户角色");
         }
         
         if (userService.bindRole(userId, roleId)) {
