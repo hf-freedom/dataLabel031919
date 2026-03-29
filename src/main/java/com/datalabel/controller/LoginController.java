@@ -43,9 +43,10 @@ public class LoginController {
     }
     
     @GetMapping("/logout")
-    public String logout(HttpSession session) {
+    @ResponseBody
+    public Result<String> logout(HttpSession session) {
         session.invalidate();
-        return "redirect:/login";
+        return Result.success("退出成功", null);
     }
     
     @GetMapping("/main")
