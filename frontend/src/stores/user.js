@@ -3,12 +3,12 @@ import { ref, computed } from 'vue'
 import { userApi } from '../api/user'
 
 export const useUserStore = defineStore('user', () => {
-  let user = null
-  const isLoggedIn = computed(() => !!user)
-  const isAdmin = computed(() => user?.userType === 1)
+  const user = ref(null)
+  const isLoggedIn = computed(() => !!user.value)
+  const isAdmin = computed(() => user.value?.userType === 1)
 
   const setUser = (userData) => {
-    user = userData
+    user.value = userData
     if (userData) {
       sessionStorage.setItem('user', JSON.stringify(userData))
     } else {
@@ -19,7 +19,7 @@ export const useUserStore = defineStore('user', () => {
   const loadUser = () => {
     const savedUser = sessionStorage.getItem('user')
     if (savedUser) {
-      user = JSON.parse(savedUser)
+      user.value = JSON.parse(savedUser)
     }
   }
 
