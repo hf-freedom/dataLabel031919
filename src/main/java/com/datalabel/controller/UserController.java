@@ -3,7 +3,9 @@ package com.datalabel.controller;
 import com.datalabel.annotation.RequireApiPermission;
 import com.datalabel.common.DataPermissionUtils;
 import com.datalabel.common.Result;
+import com.datalabel.entity.Role;
 import com.datalabel.entity.User;
+import com.datalabel.service.RoleService;
 import com.datalabel.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +20,9 @@ public class UserController {
     
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private RoleService roleService;
     
     @Autowired
     private DataPermissionUtils dataPermissionUtils;
@@ -79,6 +84,14 @@ public class UserController {
             return Result.error(403, "无权限在该组织机构下创建用户");
         }
         
+        // 角色权限检查：不能分配管理员角色
+        if (user.getRoleId() != null) {
+            Role targetRole = roleService.findById(user.getRoleId());
+            if (targetRole == null || "ADMIN".equals(targetRole.getCode())) {
+                return Result.error(403, "无权限分配该角色");
+            }
+        }
+        
         User existUser = userService.findByUsername(user.getUsername());
         if (existUser != null && !existUser.getId().equals(user.getId())) {
             return Result.error("用户名已存在");
@@ -120,6 +133,20 @@ public class UserController {
                     && (existingUser == null || !user.getOrganizationId().equals(existingUser.getOrganizationId()))
                     && !dataPermissionUtils.hasOrgPermission(currentUser, user.getOrganizationId())) {
                 return Result.error(403, "无权限将用户移动到该组织机构");
+            }
+            
+            // 角色权限检查：只能分配自己有权限的角色
+            if (user.getRoleId() != null) {
+                // 关键安全检查：任何人都不能通过API分配管理员角色
+                // ADMIN角色只能通过数据初始化设置，防止权限提升
+                Role targetRole = roleService.findById(user.getRoleId());
+                if (targetRole == null || "ADMIN".equals(targetRole.getCode())) {
+                    return Result.error(403, "无权限分配该角色");
+                }
+                // 检查角色的组织权限范围是否超出当前用户权限（所有管理员都要检查）
+                if (dataPermissionUtils.isRoleHasExtraOrgPermission(currentUser, user.getRoleId())) {
+                    return Result.error(403, "无权限分配超出自身组织范围的角色");
+                }
             }
             
             existingUser.setRealName(user.getRealName());
@@ -178,6 +205,18 @@ public class UserController {
         if (user.getOrganizationId() != null 
                 && !dataPermissionUtils.hasOrgPermission(currentUser, user.getOrganizationId())) {
             return Result.error(403, "无权限为该用户绑定角色");
+        }
+        
+        // 角色权限检查：只能分配自己有权限的角色
+        // 1. 关键安全检查：任何人都不能通过API分配管理员角色
+        // ADMIN角色只能通过数据初始化设置，防止权限提升
+        Role targetRole = roleService.findById(roleId);
+        if (targetRole == null || "ADMIN".equals(targetRole.getCode())) {
+            return Result.error(403, "无权限分配该角色");
+        }
+        // 2. 检查角色的组织权限范围是否超出当前用户权限（所有管理员都要检查）
+        if (dataPermissionUtils.isRoleHasExtraOrgPermission(currentUser, roleId)) {
+            return Result.error(403, "无权限分配超出自身组织范围的角色");
         }
         
         if (userService.bindRole(userId, roleId)) {
