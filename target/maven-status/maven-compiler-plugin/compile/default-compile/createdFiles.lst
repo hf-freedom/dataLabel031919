@@ -14,9 +14,7 @@ com\datalabel\mapper\ApiPermissionMapper.class
 com\datalabel\config\DataInitializer.class
 com\datalabel\mapper\ApplicationMapper.class
 com\datalabel\mapper\RoleApiMapper.class
-com\datalabel\controller\UserController.class
 com\datalabel\mapper\RoleOrganizationMapper.class
-com\datalabel\controller\ApplicationController.class
 com\datalabel\entity\User.class
 com\datalabel\common\Result.class
 com\datalabel\entity\RoleApi.class
@@ -36,7 +34,6 @@ com\datalabel\config\GlobalExceptionHandler.class
 com\datalabel\controller\RoleController.class
 com\datalabel\controller\LoginController.class
 com\datalabel\mapper\ApplicationOrganizationMapper.class
-com\datalabel\common\DataPermissionUtils.class
 com\datalabel\mapper\MenuMapper.class
 com\datalabel\service\MenuService.class
 com\datalabel\controller\ApiPermissionController.class

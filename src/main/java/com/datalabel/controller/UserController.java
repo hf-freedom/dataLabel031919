@@ -122,6 +122,10 @@ public class UserController {
                 return Result.error(403, "无权限将用户移动到该组织机构");
             }
             
+            if (user.getRoleId() != null && !dataPermissionUtils.isRoleWithinPermission(currentUser, user.getRoleId())) {
+                return Result.error(403, "无权限分配该角色，角色权限范围超出您的权限范围");
+            }
+            
             existingUser.setRealName(user.getRealName());
             existingUser.setEmail(user.getEmail());
             existingUser.setPhone(user.getPhone());
@@ -178,6 +182,10 @@ public class UserController {
         if (user.getOrganizationId() != null 
                 && !dataPermissionUtils.hasOrgPermission(currentUser, user.getOrganizationId())) {
             return Result.error(403, "无权限为该用户绑定角色");
+        }
+        
+        if (!dataPermissionUtils.isRoleWithinPermission(currentUser, roleId)) {
+            return Result.error(403, "无权限分配该角色，角色权限范围超出您的权限范围");
         }
         
         if (userService.bindRole(userId, roleId)) {

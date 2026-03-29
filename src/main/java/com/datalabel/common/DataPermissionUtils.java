@@ -69,4 +69,39 @@ public class DataPermissionUtils {
         }
         return (User) session.getAttribute("currentUser");
     }
+    
+    public boolean isRoleWithinPermission(User currentUser, Long roleId) {
+        if (isAdmin(currentUser)) {
+            return true;
+        }
+        
+        if (roleId == null) {
+            return true;
+        }
+        
+        List<Long> currentUserOrgIds = getAccessibleOrgIds(currentUser);
+        if (currentUserOrgIds == null || currentUserOrgIds.isEmpty()) {
+            return false;
+        }
+        
+        List<Long> roleOrgIds = roleOrganizationService.findOrgIdsByRoleId(roleId);
+        if (roleOrgIds == null || roleOrgIds.isEmpty()) {
+            return true;
+        }
+        
+        Set<Long> accessibleOrgSet = new HashSet<>(currentUserOrgIds);
+        for (Long roleOrgId : roleOrgIds) {
+            if (!accessibleOrgSet.contains(roleOrgId)) {
+                return false;
+            }
+            List<Long> childrenIds = organizationService.findAllChildrenIds(roleOrgId);
+            for (Long childId : childrenIds) {
+                if (!accessibleOrgSet.contains(childId)) {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    }
 }

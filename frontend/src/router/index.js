@@ -23,13 +23,13 @@ const routes = [
       {
         path: 'user',
         name: 'User',
-        component: () => import('../views/user/UserListView.vue'),
+        component: () => import('../views/user/UserList.vue'),
         meta: { title: '用户管理' }
       },
       {
         path: 'role',
         name: 'Role',
-        component: () => import('../views/role/RoleListView.vue'),
+        component: () => import('../views/role/RoleList.vue'),
         meta: { title: '角色管理' }
       },
       {
@@ -73,6 +73,8 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
+  
+  userStore.loadUser()
   
   if (to.meta.requiresAuth !== false && !userStore.isLoggedIn) {
     next('/login')
